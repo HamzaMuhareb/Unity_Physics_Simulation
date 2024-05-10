@@ -162,7 +162,7 @@ public static class SimulationFunctions
         return DerivativeSpikyPow3(dst, radius);
     }
 
-    public static float PressureFromDensity(float density,float TargetDensity , float PressureMultiplier)
+    public static float PressureFromDensity(float density, float TargetDensity, float PressureMultiplier)
     {
         return (density - TargetDensity) * PressureMultiplier;
     }
@@ -247,7 +247,7 @@ public static class SimulationFunctions
 
                     if (sqrDstToNeighbor > sqrRadius) continue;
 
-                    float dst = Mathf.Sqrt(sqrDstToNeighbor);
+                    float dst = math.sqrt(sqrDstToNeighbor);
                     density += DensityKernel(dst, SmoothingRadius);
                     nearDensity += NearDensityKernel(dst, SmoothingRadius);
                 }
@@ -259,7 +259,7 @@ public static class SimulationFunctions
         DensitiesBuffer.SetData(densities);
     }
 
-    public static void CalculatePressureForce(ComputeBuffer PredictedPositionsBuffer, ComputeBuffer VelocitiesBuffer, ComputeBuffer DensitiesBuffer, ComputeBuffer SpatialIndicesBuffer, ComputeBuffer SpatialOffsetsBuffer, int NumParticles, float SmoothingRadius, float TargetDensity, float PressureMultiplier, float NearPressureMultiplier,float DeltaTime)
+    public static void CalculatePressureForce(ComputeBuffer PredictedPositionsBuffer, ComputeBuffer VelocitiesBuffer, ComputeBuffer DensitiesBuffer, ComputeBuffer SpatialIndicesBuffer, ComputeBuffer SpatialOffsetsBuffer, int NumParticles, float SmoothingRadius, float TargetDensity, float PressureMultiplier, float NearPressureMultiplier, float DeltaTime)
     {
         Vector3[] predictedPositions = new Vector3[PredictedPositionsBuffer.count];
         PredictedPositionsBuffer.GetData(predictedPositions);
@@ -282,8 +282,8 @@ public static class SimulationFunctions
         {
             float density = densities[i].x;
             float nearDensity = densities[i].y;
-            float pressure = PressureFromDensity(density , TargetDensity ,PressureMultiplier);
-            float nearPressure = NearPressureFromDensity(nearDensity,NearPressureMultiplier);
+            float pressure = PressureFromDensity(density, TargetDensity, PressureMultiplier);
+            float nearPressure = NearPressureFromDensity(nearDensity, NearPressureMultiplier);
             Vector3 pressureForce = Vector3.zero;
 
             Vector3 pos = predictedPositions[i];
@@ -313,13 +313,13 @@ public static class SimulationFunctions
 
                     float densityNeighbor = densities[NeighborIndex].x;
                     float nearDensityNeighbor = densities[NeighborIndex].y;
-                    float NeighborPressure = PressureFromDensity(densityNeighbor,TargetDensity ,PressureMultiplier);
-                    float NeighborPressureNear = NearPressureFromDensity(nearDensityNeighbor ,NearPressureMultiplier);
+                    float NeighborPressure = PressureFromDensity(densityNeighbor, TargetDensity, PressureMultiplier);
+                    float NeighborPressureNear = NearPressureFromDensity(nearDensityNeighbor, NearPressureMultiplier);
 
                     float sharedPressure = (pressure + NeighborPressure) / 2;
                     float sharedNearPressure = (nearPressure + NeighborPressureNear) / 2;
 
-                    float dst = Mathf.Sqrt(sqrDstToNeighbor);
+                    float dst = math.sqrt(sqrDstToNeighbor);
                     Vector3 dir = dst > 0 ? (NeighborPos - pos) / dst : Vector3.up;
 
                     pressureForce += dir * DensityDerivative(dst, SmoothingRadius) * sharedPressure / densityNeighbor;
@@ -375,7 +375,7 @@ public static class SimulationFunctions
 
                     if (sqrDstToNeighbor > sqrRadius) continue;
 
-                    viscosityForce += (velocities[NeighborIndex] - velocity) * SmoothingKernelPoly6(Mathf.Sqrt(sqrDstToNeighbor), SmoothingRadius);
+                    viscosityForce += (velocities[NeighborIndex] - velocity) * SmoothingKernelPoly6(math.sqrt(sqrDstToNeighbor), SmoothingRadius);
                 }
             }
 
@@ -399,7 +399,7 @@ public static class SimulationFunctions
 
         PositionsBuffer.SetData(positions);
     }
-    public static void ResolveCollisions(float CollisionDamping, ComputeBuffer PositionsBuffer, ComputeBuffer VelocitiesBuffer, int NumParticles)
+    public static void ResolveCollisions(float CollisionDamping, ComputeBuffer PositionsBuffer, ComputeBuffer VelocitiesBuffer, int NumParticles, Vector3[] obstacleCentres, Vector3[] obstacleSizes, float[] obstacleRadii, float[] obstacleHeights)
     {
         Vector3[] positionsData = new Vector3[PositionsBuffer.count];
         Vector3[] velocitiesData = new Vector3[VelocitiesBuffer.count];
@@ -412,28 +412,101 @@ public static class SimulationFunctions
 
             // Calculate distance from box on each axis (negative values are inside box)
             Vector3 halfSize = BoundsSize * 0.5f;
-            Vector3 absPosLocal = new Vector3(Mathf.Abs(posLocal.x), Mathf.Abs(posLocal.y), Mathf.Abs(posLocal.z));
+            Vector3 absPosLocal = new Vector3(math.abs(posLocal.x), math.abs(posLocal.y), math.abs(posLocal.z));
             Vector3 edgeDst = halfSize - absPosLocal;
 
             // Resolve collisions
             if (edgeDst.x <= 0)
             {
-                posLocal.x = halfSize.x * Mathf.Sign(posLocal.x);
+                posLocal.x = halfSize.x * math.sign(posLocal.x);
                 velocityLocal.x *= -1 * CollisionDamping;
             }
             if (edgeDst.y <= 0)
             {
-                posLocal.y = halfSize.y * Mathf.Sign(posLocal.y);
+                posLocal.y = halfSize.y * math.sign(posLocal.y);
                 velocityLocal.y *= -1 * CollisionDamping;
             }
             if (edgeDst.z <= 0)
             {
-                posLocal.z = halfSize.z * Mathf.Sign(posLocal.z);
+                posLocal.z = halfSize.z * math.sign(posLocal.z);
                 velocityLocal.z *= -1 * CollisionDamping;
             }
+            for (int p = 0; p < obstacleCentres.Length; p++)
+            {
+
+                Vector3 obstacleCentre = obstacleCentres[p];
+                Vector3 obstacleSize = obstacleSizes[p];
+                Vector3 obstacleHalfSize = obstacleSize * 0.5f;
+                Vector3 obstacleEdgeDst = obstacleHalfSize - new Vector3(math.abs(posLocal.x - obstacleCentre.x), math.abs(posLocal.y - obstacleCentre.y), math.abs(posLocal.z - obstacleCentre.z));
+
+                if (obstacleEdgeDst.x >= 0 && obstacleEdgeDst.y >= 0 && obstacleEdgeDst.z >= 0)
+                {
+                    // Determine the axis with the smallest distance to the obstacle
+                    if (obstacleEdgeDst.z < obstacleEdgeDst.x && obstacleEdgeDst.z < obstacleEdgeDst.y)
+                    {
+                        posLocal.z = obstacleHalfSize.z * math.sign(posLocal.z - obstacleCentre.z) + obstacleCentre.z;
+                        velocityLocal.z *= -1 * CollisionDamping;
+                    }
+                    else if (obstacleEdgeDst.x < obstacleEdgeDst.y && obstacleEdgeDst.x <= obstacleEdgeDst.z)
+                    {
+                        posLocal.x = obstacleHalfSize.x * math.sign(posLocal.x - obstacleCentre.x) + obstacleCentre.x;
+                        velocityLocal.x *= -1 * CollisionDamping;
+                    }
+                    else
+                    {
+                        posLocal.y = obstacleHalfSize.y * math.sign(posLocal.y - obstacleCentre.y) + obstacleCentre.y;
+                        velocityLocal.y *= -1 * CollisionDamping;
+                    }
+                }
+
+                // float obstacleRadius = obstacleRadii[0];
+
+                // float distanceToObstacle = Vector3.Distance(posLocal, obstacleCentre);
+
+                // if (distanceToObstacle <= obstacleRadius)
+                // {
+                //     // Calculate the direction from the obstacle to the particle
+                //     Vector3 collisionNormal = Vector3.Normalize(posLocal - obstacleCentre);
+
+                //     posLocal = obstacleCentre + collisionNormal * obstacleRadius;
+
+                //     velocityLocal = Vector3.Reflect(velocityLocal, collisionNormal);
+
+                //     velocityLocal *= CollisionDamping;
+                // }
+
+                // float obstacleHeight = obstacleHeights[0];
+                // float obstacleHalfHeight = obstacleHeight * 0.5f;
+                // Vector3 obstacleDist = new Vector3(obstacleHalfHeight - math.abs(posLocal.x - obstacleCentre.x), obstacleHalfHeight - math.abs(posLocal.y - obstacleCentre.y), obstacleHalfHeight - math.abs(posLocal.z - obstacleCentre.z));
+                // Vector3 axisToParticle = posLocal - obstacleCentre;
+                // Vector3 crossProduct = Vector3.Cross(axisToParticle, new Vector3(0, 1, 0));
+                // float distanceToAxis = (float)math.sqrt(crossProduct.x * crossProduct.x + crossProduct.y * crossProduct.y + crossProduct.z * crossProduct.z);
+
+                // if (distanceToAxis <= obstacleRadius && obstacleDist.y >= 0)
+                // {
+                //     if (obstacleDist.y < distanceToAxis)
+                //     {
+                //         posLocal.y = obstacleHalfHeight * math.sign(posLocal.y - obstacleCentre.y) + obstacleCentre.y;
+                //         velocityLocal.y *= -1 * CollisionDamping;
+                //     }
+                //     else
+                //     {
+                //         // Project the particle onto the surface of the cylinder
+                //         Vector3 collisionNormal = Vector3.Normalize(axisToParticle - Vector3.Dot(axisToParticle, new Vector3(0, 1, 0)) * new Vector3(0, 1, 0));
+                //         posLocal = obstacleCentre + collisionNormal * obstacleRadius;
+
+                //         // Reflect the velocity using the surface normal
+                //         velocityLocal = Vector3.Reflect(velocityLocal, collisionNormal);
+
+                //         velocityLocal *= CollisionDamping;
+                //     }
+            }
+
+
             positionsData[particleIndex] = LocalToWorld.MultiplyPoint(posLocal);
             velocitiesData[particleIndex] = LocalToWorld.MultiplyPoint(velocityLocal);
         }
+
         // Set the modified data back to the buffer
         PositionsBuffer.SetData(positionsData);
         VelocitiesBuffer.SetData(velocitiesData);
