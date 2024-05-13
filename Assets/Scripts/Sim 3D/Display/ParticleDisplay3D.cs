@@ -29,7 +29,7 @@ public class ParticleDisplay3D : MonoBehaviour
 
         mesh = SebStuff.SphereGenerator.GenerateSphereMesh(meshResolution);
         debug_MeshTriCount = mesh.triangles.Length / 3;
-        argsBuffer = ComputeHelper.CreateArgsBuffer(mesh, sim.positionBuffer.count);
+        argsBuffer = CreateArgsBuffer(mesh, sim.positionBuffer.count);
         bounds = new Bounds(Vector3.zero, Vector3.one * 10000);
     }
 
@@ -98,6 +98,21 @@ public class ParticleDisplay3D : MonoBehaviour
 
     void OnDestroy()
     {
-        ComputeHelper.Release(argsBuffer);
+        argsBuffer.Release();
+    }
+
+    public static ComputeBuffer CreateArgsBuffer(Mesh mesh, int numInstances)
+    {
+        const int subMeshIndex = 0;
+        uint[] args = new uint[5];
+        args[0] = (uint)mesh.GetIndexCount(subMeshIndex);
+        args[1] = (uint)numInstances;
+        args[2] = (uint)mesh.GetIndexStart(subMeshIndex);
+        args[3] = (uint)mesh.GetBaseVertex(subMeshIndex);
+        args[4] = 0; // offset
+
+        ComputeBuffer argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+        argsBuffer.SetData(args);
+        return argsBuffer;
     }
 }

@@ -39,6 +39,10 @@ public class Simulation3D : MonoBehaviour
     private int numParticles;
 
 
+    private int ParticlesLayer=1;
+    private int PreFrame=0;
+
+
     private Vector3[] obstacleCentres = new Vector3[4];
     private Vector3[] obstacleSizes = new Vector3[4];
     private float[] obstacleRadii = new float[4];
@@ -87,6 +91,11 @@ public class Simulation3D : MonoBehaviour
             RunSimulationFrame(Time.deltaTime);
         }
 
+        if(Time.realtimeSinceStartup-PreFrame > 2){
+            SimulationGenerator(spawner);
+            PreFrame= (int)Time.realtimeSinceStartup;
+        }
+
         if (pauseNextFrame)
         {
             isPaused = true;
@@ -111,7 +120,11 @@ public class Simulation3D : MonoBehaviour
             }
         }
     }
-
+    void SimulationGenerator(Spawner3D spawner)
+    {
+        SimulationFunctions.ReGenerateParticles(positionBuffer, velocityBuffer, ParticlesLayer, spawner.centre, spawner.size, spawner.initialVel, spawner.jitterStrength);
+        ParticlesLayer++;
+    }
     void RunSimulationStep()
     {
         SimulationFunctions.ExternalForces(positionBuffer, velocityBuffer, numParticles, gravity, Time.fixedDeltaTime);
@@ -154,6 +167,11 @@ public class Simulation3D : MonoBehaviour
             pauseNextFrame = true;
         }
 
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            SimulationGenerator(spawner);
+        }
+
         if (Input.GetKeyDown(KeyCode.R))
         {
             isPaused = true;
@@ -175,7 +193,7 @@ public class Simulation3D : MonoBehaviour
     {
         for (int i = 0; i < 4; i++)
         {
-            obstacleCentres[i] = new Vector3(i * 3 - 4.5f, i*0.9f - 1.5f, 0) * 0.1f;
+            obstacleCentres[i] = new Vector3(i * 3 - 4.5f, i * 0.9f - 1.5f - 2, 0) * 0.1f;
             obstacleSizes[i] = new Vector3(5, 1, 10) * 0.1f;
             obstacleRadii[i] = 0.1f;
             obstacleHeights[i] = 0.4f;

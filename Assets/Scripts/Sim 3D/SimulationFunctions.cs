@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Mathematics;
 using UnityEngine.Rendering;
+using System;
 
 public static class SimulationFunctions
 {
@@ -484,7 +485,7 @@ public static class SimulationFunctions
 
                 // if (distanceToAxis <= obstacleRadius && obstacleDist.y >= 0)
                 // {
-                //     if (obstacleDist.y < distanceToAxis)
+                //     if (obstacleDist.y < 0.5f)
                 //     {
                 //         posLocal.y = obstacleHalfHeight * math.sign(posLocal.y - obstacleCentre.y) + obstacleCentre.y;
                 //         velocityLocal.y *= -1 * CollisionDamping;
@@ -492,6 +493,7 @@ public static class SimulationFunctions
                 //     else
                 //     {
                 //         // Project the particle onto the surface of the cylinder
+                //      // Vector3 collisionNormal = Vector3.Normalize(Vector3.Dot(axisToParticle, new Vector3(1, 0, 1)));
                 //         Vector3 collisionNormal = Vector3.Normalize(axisToParticle - Vector3.Dot(axisToParticle, new Vector3(0, 1, 0)) * new Vector3(0, 1, 0));
                 //         posLocal = obstacleCentre + collisionNormal * obstacleRadius;
 
@@ -507,6 +509,44 @@ public static class SimulationFunctions
             velocitiesData[particleIndex] = LocalToWorld.MultiplyPoint(velocityLocal);
         }
 
+        // Set the modified data back to the buffer
+        PositionsBuffer.SetData(positionsData);
+        VelocitiesBuffer.SetData(velocitiesData);
+    }
+
+
+
+    public static void ReGenerateParticles(ComputeBuffer PositionsBuffer, ComputeBuffer VelocitiesBuffer, int ParticlesLayer, Vector3 centre, float size, float3 initialVel, float jitterStrength)
+    {
+        Vector3[] positionsData = new Vector3[PositionsBuffer.count];
+        Vector3[] velocitiesData = new Vector3[VelocitiesBuffer.count];
+        PositionsBuffer.GetData(positionsData);
+        VelocitiesBuffer.GetData(velocitiesData);
+        int n = Convert.ToInt32(Math.Pow(PositionsBuffer.count, 1f / 3f));
+
+        int particleIndex = n * (ParticlesLayer - 1);
+
+        // Vector3 posLocal = WorldToLocal.MultiplyPoint(positionsData[particleIndex]);
+        // Vector3 velocityLocal = WorldToLocal.MultiplyVector(velocitiesData[particleIndex]);
+        for (int y = 0; y < n; y++)
+        {
+            for (int z = 0; z < n; z++)
+            {
+                float tx = 0 / (n - 1f);
+                float ty = y / (n - 1f);
+                float tz = z / (n - 1f);
+
+                float px = (tx - 0.5f) * size + centre.x;
+                float py = (ty - 0.5f) * size + centre.y;
+                float pz = (tz - 0.5f) * size + centre.z;
+                float3 jitter = UnityEngine.Random.insideUnitSphere * jitterStrength;
+                positionsData[particleIndex] = new float3(px, py, pz) + jitter;
+                velocitiesData[particleIndex] = initialVel;
+                particleIndex++;
+            }
+            // positionsData[particleIndex] = LocalToWorld.MultiplyPoint(posLocal);
+            // velocitiesData[particleIndex] = LocalToWorld.MultiplyPoint(velocityLocal);
+        }
         // Set the modified data back to the buffer
         PositionsBuffer.SetData(positionsData);
         VelocitiesBuffer.SetData(velocitiesData);
